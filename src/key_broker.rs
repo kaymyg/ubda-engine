@@ -72,16 +72,19 @@ impl<'a> KeyBroker<'a> {
             });
         }
 
-        if !self.replay_store.check_and_register(&dac.cap_id, &dac.session_id, dac.nonce) {
-            return Err(KeyBrokerError::ReplayDetected);
-        }
-
         let peer_public_key = UnparsedPublicKey::new(&ED25519, self.authorizer.public_key_bytes());
         let canonical_bytes = dac.canonical_bytes();
 
         peer_public_key
             .verify(&canonical_bytes, &dac.authorizer_signature)
             .map_err(|_| KeyBrokerError::InvalidSignature)?;
+
+        // Only an authentic capability may consume replay state. Registering a
+        // capability before signature verification lets a forged request block
+        // the valid capability with the same cap ID and nonce.
+        if !self.replay_store.check_and_register(&dac.cap_id, &dac.session_id, dac.nonce) {
+            return Err(KeyBrokerError::ReplayDetected);
+        }
 
         self.authorizer
             .derive_session_key(dac)
@@ -155,6 +158,32 @@ mod tests {
             TrustState::BehavioralContinuity,
         );
         assert!(matches!(replay, Err(KeyBrokerError::ReplayDetected)));
+    }
+
+    #[test]
+    fn invalid_signature_does_not_consume_replay_state() {
+        let (authorizer, dac, now, session_id) = setup();
+        let mut broker = KeyBroker::new(&authorizer);
+        let mut forged_dac = dac.clone();
+        forged_dac.required_state = TrustState::CriticalElevation;
+
+        let forged_result = broker.execute_key_use(
+            &forged_dac,
+            session_id,
+            AccessOperation::Read,
+            now,
+            TrustState::CriticalElevation,
+        );
+        assert!(matches!(forged_result, Err(KeyBrokerError::InvalidSignature)));
+
+        let valid_result = broker.execute_key_use(
+            &dac,
+            session_id,
+            AccessOperation::Read,
+            now,
+            TrustState::BehavioralContinuity,
+        );
+        assert!(valid_result.is_ok());
     }
 
     #[test]
