@@ -25,13 +25,15 @@ explore the design pattern — not to ship a production security product.
 * **Data classifications (`D0`…`D3`)** describe how sensitive a resource is,
   from public system files up to root/master key material.
 * Every classification has a **minimum required trust state**. The
-  `KeyAuthority` refuses to issue a capability if the caller's asserted trust
-  state doesn't meet it.
+  `KeyAuthority` first verifies the Behavioral Trust Engine's signed, fresh
+  policy assertion, then refuses to issue a capability when its asserted trust
+  state does not meet that classification's minimum.
 * A **Data Access Capability (DAC)** is a signed, time-boxed, single-use,
-  resource-scoped grant. The `KeyBroker` independently re-verifies the DAC's
-  signature, expiry, trust-state requirement, operation, and session binding,
-  and rejects replay via nonce/cap-id tracking, before asking the authority to
-  derive an ephemeral session key (HKDF-SHA256).
+  resource-scoped grant. The authority generates an unpredictable nonce and
+  validates a positive, non-overflowing TTL. The `KeyBroker` independently
+  re-verifies the DAC's signature, expiry, trust-state requirement, operation,
+  and session binding, then rejects replay before asking the authority to
+  derive an ephemeral session key (HKDF-SHA256) bound to the complete DAC scope.
 * A hard anomaly signal (or an intrusion interrupt) forces the whole system
   into a `Compromised` (`T-1`) state where all key material is invalidated
   until an explicit hardware recovery reset.

@@ -53,6 +53,16 @@ pub struct PolicyAssertion {
     pub asserted_state: TrustState,
     pub telemetry_proof: BehavioralTelemetry,
     pub timestamp: i64,
+    pub bte_signature: Vec<u8>,
+}
+
+impl PolicyAssertion {
+    /// Canonical bytes signed by the Behavioral Trust Engine.
+    pub fn canonical_bytes(&self) -> Vec<u8> {
+        let mut clone = self.clone();
+        clone.bte_signature.clear();
+        bincode::serialize(&clone).expect("Canonical serialization failed")
+    }
 }
 
 /// Signed Data Access Capability (DAC)

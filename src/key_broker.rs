@@ -100,8 +100,8 @@ mod tests {
     use crate::types::{BehavioralTelemetry, DataClassification};
 
     fn setup() -> (MockHardwareAuthorizer, DataAccessCapability, i64, &'static str) {
-        let authorizer = MockHardwareAuthorizer::new();
         let bte = BehavioralTrustEngine::new(0.7);
+        let authorizer = MockHardwareAuthorizer::new(bte.public_key_bytes());
         let session_id = "test_session";
         let now = 1_000_000;
 
@@ -121,7 +121,6 @@ mod tests {
                 AccessOperation::Read,
                 now,
                 300,
-                42,
             )
             .unwrap();
 

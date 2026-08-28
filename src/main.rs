@@ -15,9 +15,9 @@ fn main() {
     println!("=== UBDA V1.2-alpha Architectural Refactor Integration Test ===");
 
     let mut state_machine = SystemStateMachine::new(0.70);
-    let mock_authorizer = MockHardwareAuthorizer::new();
-    let mut key_broker = KeyBroker::new(&mock_authorizer);
     let bte = BehavioralTrustEngine::new(0.70);
+    let mock_authorizer = MockHardwareAuthorizer::new(bte.public_key_bytes());
+    let mut key_broker = KeyBroker::new(&mock_authorizer);
 
     let session_id = "sess_ubda_v1_alpha";
     let now = chrono::Utc::now().timestamp();
@@ -48,7 +48,6 @@ fn main() {
         AccessOperation::Read,
         now,
         300,
-        2001,
     );
 
     match d2_issuance {
@@ -68,7 +67,6 @@ fn main() {
             AccessOperation::Read,
             now,
             300,
-            2002,
         )
         .expect("D1 DAC issuance failed");
 
@@ -105,7 +103,6 @@ fn main() {
             AccessOperation::Read,
             now,
             300,
-            2003,
         )
         .unwrap();
 
