@@ -1,3 +1,7 @@
+---
+license: mit
+---
+
 # UBDA — Unified Behavioral Data Access (V1.2-alpha)
 
 UBDA is a prototype **capability-based data access architecture** written in Rust. It
