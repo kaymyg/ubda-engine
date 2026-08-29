@@ -4,21 +4,21 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum TrustState {
     Compromised = -1,         // T_-1: Hard Isolation / Containment
-    Unauthenticated = 0,     // T_0: Unauthenticated / Raw Boot
-    DeviceAuthenticated = 1, // T_1: Hardened Device Access
-    BehavioralContinuity = 2,// T_2: BTE Telemetry Verified
-    HighAssurance = 3,       // T_3: Biometric / Step-Up Verified
-    CriticalElevation = 4,   // T_4: Out-of-Band / Hardware Token
+    Unauthenticated = 0,      // T_0: Unauthenticated / Raw Boot
+    DeviceAuthenticated = 1,  // T_1: Hardened Device Access
+    BehavioralContinuity = 2, // T_2: BTE Telemetry Verified
+    HighAssurance = 3,        // T_3: Biometric / Step-Up Verified
+    CriticalElevation = 4,    // T_4: Out-of-Band / Hardware Token
 }
 
 impl TrustState {
     /// Enforces the minimum trust state required for each data classification level.
     pub fn minimum_required_for(classification: DataClassification) -> Self {
         match classification {
-            DataClassification::D0 => TrustState::DeviceAuthenticated,   // D0 -> T1
-            DataClassification::D1 => TrustState::BehavioralContinuity,  // D1 -> T2
-            DataClassification::D2 => TrustState::HighAssurance,         // D2 -> T3
-            DataClassification::D3 => TrustState::CriticalElevation,     // D3 -> T4
+            DataClassification::D0 => TrustState::DeviceAuthenticated, // D0 -> T1
+            DataClassification::D1 => TrustState::BehavioralContinuity, // D1 -> T2
+            DataClassification::D2 => TrustState::HighAssurance,       // D2 -> T3
+            DataClassification::D3 => TrustState::CriticalElevation,   // D3 -> T4
         }
     }
 }

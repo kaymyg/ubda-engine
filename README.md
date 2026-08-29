@@ -1,8 +1,8 @@
----
-license: mit
----
-
 # UBDA — Unified Behavioral Data Access (V1.2-alpha)
+
+[![CI](https://github.com/kaymyg/ubda-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/kaymyg/ubda-engine/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Rust 2021](https://img.shields.io/badge/rust-2021_edition-orange.svg)](Cargo.toml)
 
 UBDA is a prototype **capability-based data access architecture** written in Rust. It
 models a system where a software behavioral-trust engine can *influence* trust
@@ -15,6 +15,9 @@ explore the design pattern — not to ship a production security product.
 > keypair and a hard-coded demo secret in place of a real HSM/TEE, and Ed25519
 > is used as a placeholder for a future post-quantum signature scheme. Do not
 > use this as-is to protect real secrets.
+
+**Try it live:** [UBDA Engine Demo on Hugging Face Spaces](https://huggingface.co/spaces/sahek/ubda-engine)
+— click "Run protocol walkthrough" to execute the real compiled engine in your browser.
 
 ## Concept
 
@@ -66,7 +69,8 @@ cargo test
 Expected `cargo run` output walks through: reaching T2 via behavioral
 continuity, a rejected over-privileged request, a full issue → verify →
 derive-key cycle, a blocked replay attempt, a blocked signature-tampering
-attempt, and a compromise lockout + recovery reset.
+attempt, full elevation through T3/T4 with real D2/D3 capability issuance, and
+a compromise lockout + recovery reset.
 
 ## Requirements
 
@@ -77,3 +81,18 @@ attempt, and a compromise lockout + recovery reset.
 ## License
 
 MIT — see [`LICENSE`](LICENSE).
+
+## Contributing
+
+Bug reports, feature ideas, and PRs are welcome — see
+[`CONTRIBUTING.md`](CONTRIBUTING.md) for setup and the checks CI runs.
+
+## Security
+
+Found a design or implementation flaw? Please see
+[`SECURITY.md`](SECURITY.md) for how to report it responsibly rather than
+opening a public issue.
+
+## Changelog
+
+See [`CHANGELOG.md`](CHANGELOG.md).

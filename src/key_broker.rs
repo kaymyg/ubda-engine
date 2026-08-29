@@ -9,13 +9,23 @@ pub enum KeyBrokerError {
     #[error("Invalid capability signature or canonical payload tampered.")]
     InvalidSignature,
     #[error("Time bounds invalid. Current: {current}, Issued: {issued}, Expires: {expires}")]
-    InvalidTimeBounds { current: i64, issued: i64, expires: i64 },
+    InvalidTimeBounds {
+        current: i64,
+        issued: i64,
+        expires: i64,
+    },
     #[error("Capability replayed! Cap ID or nonce consumed.")]
     ReplayDetected,
     #[error("Operation requested ({requested:?}) does not match DAC permission ({permitted:?}).")]
-    OperationMismatch { requested: AccessOperation, permitted: AccessOperation },
+    OperationMismatch {
+        requested: AccessOperation,
+        permitted: AccessOperation,
+    },
     #[error("System trust state ({current:?}) is lower than required DAC state ({required:?}).")]
-    StateRequirementNotMet { current: TrustState, required: TrustState },
+    StateRequirementNotMet {
+        current: TrustState,
+        required: TrustState,
+    },
     #[error("Session ID mismatch. Key Broker bound to {expected}, DAC issued to {found}.")]
     SessionMismatch { expected: String, found: String },
     #[error("Underlying Key Authority error.")]
@@ -72,7 +82,10 @@ impl<'a> KeyBroker<'a> {
             });
         }
 
-        if !self.replay_store.check_and_register(&dac.cap_id, &dac.session_id, dac.nonce) {
+        if !self
+            .replay_store
+            .check_and_register(&dac.cap_id, &dac.session_id, dac.nonce)
+        {
             return Err(KeyBrokerError::ReplayDetected);
         }
 
@@ -96,7 +109,12 @@ mod tests {
     use crate::hardware_authorizer::MockHardwareAuthorizer;
     use crate::types::{BehavioralTelemetry, DataClassification};
 
-    fn setup() -> (MockHardwareAuthorizer, DataAccessCapability, i64, &'static str) {
+    fn setup() -> (
+        MockHardwareAuthorizer,
+        DataAccessCapability,
+        i64,
+        &'static str,
+    ) {
         let authorizer = MockHardwareAuthorizer::new();
         let bte = BehavioralTrustEngine::new(0.7);
         let session_id = "test_session";
@@ -108,7 +126,8 @@ mod tests {
             spatial_risk_factor: 0.01,
             timestamp: now,
         };
-        let assertion = bte.process_telemetry(session_id, telemetry, TrustState::DeviceAuthenticated);
+        let assertion =
+            bte.process_telemetry(session_id, telemetry, TrustState::DeviceAuthenticated);
 
         let dac = authorizer
             .issue_dac(
@@ -144,7 +163,13 @@ mod tests {
         let (authorizer, dac, now, session_id) = setup();
         let mut broker = KeyBroker::new(&authorizer);
         broker
-            .execute_key_use(&dac, session_id, AccessOperation::Read, now, TrustState::BehavioralContinuity)
+            .execute_key_use(
+                &dac,
+                session_id,
+                AccessOperation::Read,
+                now,
+                TrustState::BehavioralContinuity,
+            )
             .unwrap();
 
         let replay = broker.execute_key_use(
@@ -184,7 +209,10 @@ mod tests {
             now,
             TrustState::DeviceAuthenticated, // below required T2
         );
-        assert!(matches!(result, Err(KeyBrokerError::StateRequirementNotMet { .. })));
+        assert!(matches!(
+            result,
+            Err(KeyBrokerError::StateRequirementNotMet { .. })
+        ));
     }
 
     #[test]
@@ -198,7 +226,10 @@ mod tests {
             now + 301, // past TTL
             TrustState::BehavioralContinuity,
         );
-        assert!(matches!(result, Err(KeyBrokerError::InvalidTimeBounds { .. })));
+        assert!(matches!(
+            result,
+            Err(KeyBrokerError::InvalidTimeBounds { .. })
+        ));
     }
 
     #[test]
@@ -212,7 +243,10 @@ mod tests {
             now,
             TrustState::BehavioralContinuity,
         );
-        assert!(matches!(result, Err(KeyBrokerError::OperationMismatch { .. })));
+        assert!(matches!(
+            result,
+            Err(KeyBrokerError::OperationMismatch { .. })
+        ));
     }
 
     #[test]
@@ -226,6 +260,9 @@ mod tests {
             now,
             TrustState::BehavioralContinuity,
         );
-        assert!(matches!(result, Err(KeyBrokerError::SessionMismatch { .. })));
+        assert!(matches!(
+            result,
+            Err(KeyBrokerError::SessionMismatch { .. })
+        ));
     }
 }

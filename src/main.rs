@@ -23,7 +23,7 @@ fn main() {
     let now = chrono::Utc::now().timestamp();
 
     // 1. Establish State T0 -> T1 -> T2
-    println!("\n[1/6] Transitioning State: T0 -> T1 -> T2...");
+    println!("\n[1/7] Transitioning State: T0 -> T1 -> T2...");
     state_machine.handle_device_authenticated().unwrap();
 
     let telemetry = BehavioralTelemetry {
@@ -33,14 +33,20 @@ fn main() {
         timestamp: now,
     };
 
-    let assertion = bte.process_telemetry(session_id, telemetry.clone(), state_machine.current_state());
-    state_machine.handle_behavioral_assertion(&telemetry).unwrap();
+    let assertion =
+        bte.process_telemetry(session_id, telemetry.clone(), state_machine.current_state());
+    state_machine
+        .handle_behavioral_assertion(&telemetry)
+        .unwrap();
 
-    assert_eq!(state_machine.current_state(), TrustState::BehavioralContinuity);
+    assert_eq!(
+        state_machine.current_state(),
+        TrustState::BehavioralContinuity
+    );
     println!(" -> Active State: T2 (BehavioralContinuity)");
 
     // 2. Reject Insufficient Classification (T2 requesting D2 data)
-    println!("\n[2/6] Testing Classification Policy Enforcement (T2 requesting D2 data)...");
+    println!("\n[2/7] Testing Classification Policy Enforcement (T2 requesting D2 data)...");
     let d2_issuance = mock_authorizer.issue_dac(
         &assertion,
         "financial_records.enc".to_string(),
@@ -59,7 +65,7 @@ fn main() {
     }
 
     // 3. Valid D1 Capability Cycle
-    println!("\n[3/6] Issuing & Consuming Valid D1 Capability...");
+    println!("\n[3/7] Issuing & Consuming Valid D1 Capability...");
     let valid_dac = mock_authorizer
         .issue_dac(
             &assertion,
@@ -73,13 +79,22 @@ fn main() {
         .expect("D1 DAC issuance failed");
 
     let key = key_broker
-        .execute_key_use(&valid_dac, session_id, AccessOperation::Read, now, state_machine.current_state())
+        .execute_key_use(
+            &valid_dac,
+            session_id,
+            AccessOperation::Read,
+            now,
+            state_machine.current_state(),
+        )
         .expect("Key derivation failed");
 
-    println!(" -> PASS: Derived Ephemeral Key (Digest: {:?})", &key.key_bytes[0..4]);
+    println!(
+        " -> PASS: Derived Ephemeral Key (Digest: {:?})",
+        &key.key_bytes[0..4]
+    );
 
     // 4. Anti-Replay Enforcement
-    println!("\n[4/6] Testing Replay Defense...");
+    println!("\n[4/7] Testing Replay Defense...");
     let replay_result = key_broker.execute_key_use(
         &valid_dac,
         session_id,
@@ -96,7 +111,7 @@ fn main() {
     }
 
     // 5. Signature Tamper Verification
-    println!("\n[5/6] Testing Signature Integrity Verification...");
+    println!("\n[5/7] Testing Signature Integrity Verification...");
     let mut tampered_dac = mock_authorizer
         .issue_dac(
             &assertion,
@@ -122,13 +137,73 @@ fn main() {
 
     match tamper_result {
         Err(key_broker::KeyBrokerError::InvalidSignature) => {
-            println!(" -> PASS: Key Broker detected field modification via canonical verification.");
+            println!(
+                " -> PASS: Key Broker detected field modification via canonical verification."
+            );
         }
         _ => panic!(" -> FAIL: Tampered capability signature validated!"),
     }
 
-    // 6. Hard Anomaly Lockout & Controlled Recovery
-    println!("\n[6/6] Injecting Hard Anomaly Interrupt (T_-1 Lockout)...");
+    // 6. Full Elevation to T3/T4 and Issuing High-Classification Capabilities
+    println!("\n[6/7] Elevating T2 -> T3 -> T4 and Issuing D2/D3 Capabilities...");
+    state_machine.handle_step_up_auth().unwrap();
+    assert_eq!(state_machine.current_state(), TrustState::HighAssurance);
+    println!(" -> Active State: T3 (HighAssurance)");
+
+    let d2_assertion =
+        bte.process_telemetry(session_id, telemetry.clone(), state_machine.current_state());
+    let d2_dac = mock_authorizer
+        .issue_dac(
+            &d2_assertion,
+            "financial_records.enc".to_string(),
+            DataClassification::D2,
+            AccessOperation::Read,
+            now,
+            300,
+            2004,
+        )
+        .expect("D2 DAC issuance failed at T3");
+    key_broker
+        .execute_key_use(
+            &d2_dac,
+            session_id,
+            AccessOperation::Read,
+            now,
+            state_machine.current_state(),
+        )
+        .expect("D2 key derivation failed at T3");
+    println!(" -> PASS: Issued & consumed D2 capability under T3 trust level.");
+
+    state_machine.handle_critical_elevation().unwrap();
+    assert_eq!(state_machine.current_state(), TrustState::CriticalElevation);
+    println!(" -> Active State: T4 (CriticalElevation)");
+
+    let d3_assertion =
+        bte.process_telemetry(session_id, telemetry.clone(), state_machine.current_state());
+    let d3_dac = mock_authorizer
+        .issue_dac(
+            &d3_assertion,
+            "root_signing_key.enc".to_string(),
+            DataClassification::D3,
+            AccessOperation::Read,
+            now,
+            300,
+            2005,
+        )
+        .expect("D3 DAC issuance failed at T4");
+    key_broker
+        .execute_key_use(
+            &d3_dac,
+            session_id,
+            AccessOperation::Read,
+            now,
+            state_machine.current_state(),
+        )
+        .expect("D3 key derivation failed at T4");
+    println!(" -> PASS: Issued & consumed D3 (master key) capability under T4 trust level.");
+
+    // 7. Hard Anomaly Lockout & Controlled Recovery
+    println!("\n[7/7] Injecting Hard Anomaly Interrupt (T_-1 Lockout)...");
     state_machine.trigger_compromise();
     assert_eq!(state_machine.current_state(), TrustState::Compromised);
 

@@ -17,7 +17,8 @@ impl BehavioralTrustEngine {
     ) -> PolicyAssertion {
         let inferred_state = if telemetry.anomaly_score >= self.anomaly_threshold {
             TrustState::Compromised
-        } else if telemetry.anomaly_score < 0.20 && current_state == TrustState::DeviceAuthenticated {
+        } else if telemetry.anomaly_score < 0.20 && current_state == TrustState::DeviceAuthenticated
+        {
             TrustState::BehavioralContinuity
         } else {
             current_state

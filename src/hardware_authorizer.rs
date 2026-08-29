@@ -1,5 +1,6 @@
 use crate::types::{
-    AccessOperation, DataClassification, DataAccessCapability, EphemeralSessionKey, PolicyAssertion, TrustState
+    AccessOperation, DataAccessCapability, DataClassification, EphemeralSessionKey,
+    PolicyAssertion, TrustState,
 };
 use ring::hkdf;
 use ring::rand::SystemRandom;
@@ -15,6 +16,9 @@ pub enum AuthorizerError {
         classification: DataClassification,
     },
     #[error("Signature generation failed.")]
+    // Ring's Ed25519 signing is currently infallible, so this variant isn't reachable yet.
+    // It's kept for forward compatibility with a fallible hardware/HSM or PQC signer.
+    #[allow(dead_code)]
     SigningFailure,
     #[error("Key derivation failed.")]
     DerivationFailure,
@@ -23,6 +27,10 @@ pub enum AuthorizerError {
 pub trait KeyAuthority {
     fn public_key_bytes(&self) -> &[u8];
 
+    // 8 args mirrors the signed DAC envelope's field set (resource, classification,
+    // operation, timing, nonce) one-to-one; a request-object refactor is tracked as a
+    // possible future cleanup, not urgent for a prototype of this size.
+    #[allow(clippy::too_many_arguments)]
     fn issue_dac(
         &self,
         assertion: &PolicyAssertion,
@@ -74,6 +82,7 @@ impl KeyAuthority for MockHardwareAuthorizer {
         &self.public_key
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn issue_dac(
         &self,
         assertion: &PolicyAssertion,
@@ -182,7 +191,10 @@ mod tests {
             60,
             1,
         );
-        assert!(matches!(dac, Err(AuthorizerError::InsufficientTrustState { .. })));
+        assert!(matches!(
+            dac,
+            Err(AuthorizerError::InsufficientTrustState { .. })
+        ));
     }
 
     #[test]
@@ -191,10 +203,26 @@ mod tests {
         let assertion = low_risk_assertion("s1", TrustState::BehavioralContinuity);
 
         let dac_a = authorizer
-            .issue_dac(&assertion, "a.enc".to_string(), DataClassification::D1, AccessOperation::Read, 0, 60, 1)
+            .issue_dac(
+                &assertion,
+                "a.enc".to_string(),
+                DataClassification::D1,
+                AccessOperation::Read,
+                0,
+                60,
+                1,
+            )
             .unwrap();
         let dac_b = authorizer
-            .issue_dac(&assertion, "b.enc".to_string(), DataClassification::D1, AccessOperation::Read, 0, 60, 2)
+            .issue_dac(
+                &assertion,
+                "b.enc".to_string(),
+                DataClassification::D1,
+                AccessOperation::Read,
+                0,
+                60,
+                2,
+            )
             .unwrap();
 
         let key_a = authorizer.derive_session_key(&dac_a).unwrap();
@@ -207,7 +235,15 @@ mod tests {
         let authorizer = MockHardwareAuthorizer::new();
         let assertion = low_risk_assertion("s1", TrustState::BehavioralContinuity);
         let dac = authorizer
-            .issue_dac(&assertion, "a.enc".to_string(), DataClassification::D1, AccessOperation::Read, 0, 60, 1)
+            .issue_dac(
+                &assertion,
+                "a.enc".to_string(),
+                DataClassification::D1,
+                AccessOperation::Read,
+                0,
+                60,
+                1,
+            )
             .unwrap();
 
         let key1 = authorizer.derive_session_key(&dac).unwrap();

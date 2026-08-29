@@ -43,7 +43,10 @@ impl SystemStateMachine {
         Ok(self.current_state)
     }
 
-    pub fn handle_behavioral_assertion(&mut self, telemetry: &BehavioralTelemetry) -> Result<TrustState, StateMachineError> {
+    pub fn handle_behavioral_assertion(
+        &mut self,
+        telemetry: &BehavioralTelemetry,
+    ) -> Result<TrustState, StateMachineError> {
         self.assert_not_compromised()?;
 
         if telemetry.anomaly_score >= self.anomaly_threshold {
@@ -134,7 +137,8 @@ mod tests {
         sm.handle_device_authenticated().unwrap();
         assert_eq!(sm.current_state(), TrustState::DeviceAuthenticated);
 
-        sm.handle_behavioral_assertion(&low_risk_telemetry()).unwrap();
+        sm.handle_behavioral_assertion(&low_risk_telemetry())
+            .unwrap();
         assert_eq!(sm.current_state(), TrustState::BehavioralContinuity);
 
         sm.handle_step_up_auth().unwrap();
@@ -173,7 +177,9 @@ mod tests {
         sm.trigger_compromise();
 
         assert!(sm.handle_device_authenticated().is_err());
-        assert!(sm.handle_behavioral_assertion(&low_risk_telemetry()).is_err());
+        assert!(sm
+            .handle_behavioral_assertion(&low_risk_telemetry())
+            .is_err());
         assert!(sm.handle_step_up_auth().is_err());
         assert!(sm.handle_critical_elevation().is_err());
 
