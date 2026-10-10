@@ -3,6 +3,7 @@
 [![CI](https://github.com/kaymyg/ubda-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/kaymyg/ubda-engine/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Rust 2021](https://img.shields.io/badge/rust-2021_edition-orange.svg)](Cargo.toml)
+[![CodeQL](https://github.com/kaymyg/ubda-engine/actions/workflows/codeql.yml/badge.svg)](https://github.com/kaymyg/ubda-engine/actions/workflows/codeql.yml)
 
 UBDA is a prototype **capability-based data access architecture** written in Rust. It
 models a system where a software behavioral-trust engine can *influence* trust
