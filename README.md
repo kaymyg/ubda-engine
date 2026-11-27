@@ -85,6 +85,8 @@ MIT — see [`LICENSE`](LICENSE).
 
 ## Contributing
 
+Looking for something to work on? See [HELP_WANTED.md](HELP_WANTED.md).
+
 Bug reports, feature ideas, and PRs are welcome — see
 [`CONTRIBUTING.md`](CONTRIBUTING.md) for setup and the checks CI runs.
 
